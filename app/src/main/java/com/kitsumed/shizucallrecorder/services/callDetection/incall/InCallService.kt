@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
  * To ensure in future Android releases that they did not change this logic, we must check InCallController source code.
  * Android 11 (no AppOps, impossible to use): https://cs.android.com/android/platform/superproject/+/android11-release:packages/services/Telecomm/src/com/android/server/telecom/InCallController.java;l=1476-1486
  * Android 12 (works) : https://cs.android.com/android/platform/superproject/+/android12-release:packages/services/Telecomm/src/com/android/server/telecom/InCallController.java;l=1818-1829
- * Android 16 (works) : https://cs.android.com/android/platform/superproject/+/android-16.0.0_r4:packages/services/Telecomm/src/com/android/server/telecom/InCallController.java;l=2679-2691
+ * Android 17 (works) : https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:packages/services/Telecomm/src/com/android/server/telecom/InCallController.java;l=2797-2809
  *
  * We can also quickly check that we are binding as NON_UI by running with adb "adb shell telecom is-non-ui-in-call-service-bound com.kitsumed.shizucallrecorder" while a call is ongoing.
  * For more detailed information, look at kitsumed comment: https://github.com/kitsumed/ShizuCallRecorder/issues/4#issuecomment-4524107187
@@ -147,6 +147,7 @@ class InCallService : InCallService() {
             // This prevents multiple triggers if the state changes during the call session.
             if (isPipelineExecuted) return
             isPipelineExecuted = true
+            AppLogger.i( "Primary call became ACTIVE. Triggering Decision Engine Pipeline.")
 
             val details = call.details
             val rawNumber = details.handle?.schemeSpecificPart ?: ""
@@ -159,20 +160,21 @@ class InCallService : InCallService() {
 
             // First attempt to get the name from the user contacts list, then fallback to the telecom-provided caller name
             // (which may be defined by the caller or a third-party app)
-            val oscallerName = details.contactDisplayName ?: details.callerDisplayName
+            val osCallerName = details.contactDisplayName ?: details.callerDisplayName
+
+            val isSelfManaged = details.hasProperty(Call.Details.PROPERTY_SELF_MANAGED)
+            val isVoip = details.hasProperty(Call.Details.PROPERTY_VOIP_AUDIO_MODE) // VoIP means audio is routed outside MediaRecorder, we must use AudioPlayback.
+            val isWifiCall = details.hasProperty(Call.Details.PROPERTY_WIFI)
+            AppLogger.d( "Primary call details - isSelfManaged: $isSelfManaged, isVoip: $isVoip, isWifiCall: $isWifiCall")
+
 
             val rawCallData = RawCallData(
                 rawPhoneNumber = PhoneNumberManager.normalisePhoneNumber(rawNumber),
                 direction = direction,
-                osProvidedCallerName = oscallerName,
-                packageName = packageName
+                osProvidedCallerName = osCallerName,
+                packageName = packageName,
+                isCallAudioVoIpBased = isVoip,
             )
-
-            AppLogger.i( "Primary call became ACTIVE. Triggering Decision Engine Pipeline.")
-            val isSelfManaged = details.hasProperty(Call.Details.PROPERTY_SELF_MANAGED)
-            val isVoip = details.hasProperty(Call.Details.PROPERTY_VOIP_AUDIO_MODE)
-            val isWifiCall = details.hasProperty(Call.Details.PROPERTY_WIFI)
-            AppLogger.d( "Primary call details - isSelfManaged: $isSelfManaged, isVoip: $isVoip, isWifiCall: $isWifiCall")
 
             serviceScope.launch {
                 val intentSentSuccessfully = RecordingDecisionEngine.getInstance(this@InCallService).executeDecisionPipeline(rawCallData)

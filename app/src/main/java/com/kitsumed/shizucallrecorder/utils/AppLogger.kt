@@ -16,10 +16,7 @@ import android.util.Log
 import com.kitsumed.shizucallrecorder.BuildConfig
 import com.kitsumed.shizucallrecorder.ILogCallback
 import com.kitsumed.shizucallrecorder.data.AppPreferences
-import com.kitsumed.shizucallrecorder.integrations.scrcpy.ScrcpyConfig
 import com.kitsumed.shizucallrecorder.system.permissions.AppPermission
-import com.kitsumed.shizucallrecorder.utils.AppLogger.init
-import com.kitsumed.shizucallrecorder.utils.AppLogger.initAsRemote
 import com.kitsumed.shizucallrecorder.utils.AppLogger.redact
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -140,8 +137,7 @@ object AppLogger {
                 return formatTag(formatClassName(className))
             }
         }
-
-        return "UnknownClassName" // Fallback if no  caller is found
+        return "SCR:UnknownClassName" // Fallback if no caller is found. Generally happen with lambda or anonymous classes due to R8.
     }
 
     /**
@@ -277,7 +273,6 @@ object AppLogger {
                 writer.println("Generated: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss z", Locale.CANADA).format(Date())}")
                 writer.println("App Version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
                 writer.println("Shizuku Supported Server API: ${Shizuku.getLatestServiceVersion()}")
-                writer.println("Scrcpy Server: ${ScrcpyConfig.SCRCPY_VERSION}")
                 writer.println("Manufacturer: ${Build.MANUFACTURER}")
                 writer.println("Model: ${Build.MODEL}")
                 writer.println("Device: ${Build.DEVICE}")
