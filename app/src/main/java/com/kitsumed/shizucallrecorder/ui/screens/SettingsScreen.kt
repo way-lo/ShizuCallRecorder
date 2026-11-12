@@ -242,8 +242,7 @@ private fun AboutSection(versionString: String) {
     val context = LocalContext.current
 
     var showLicensesDialog by remember() { mutableStateOf(false) }
-    var showSponsorScreen by remember() { mutableStateOf(false) }
-
+    
     SettingsSection(title = stringResource(R.string.settings_section_about)) {
         ListItem(
             headlineContent = { Text(versionString) },
@@ -262,29 +261,8 @@ private fun AboutSection(versionString: String) {
                 modifier = Modifier.weight(1f)
             ) { Text(stringResource(R.string.settings_view_licenses)) }
         }
-        Button(
-            onClick = { showSponsorScreen = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-        ) { Text(stringResource(R.string.sponsor_title)) }
-    }
-
-    if (showSponsorScreen) {
-        Dialog(
-            onDismissRequest = { showSponsorScreen = false },
-            properties = DialogProperties(
-                usePlatformDefaultWidth = false, // False for edge-to-edge, since our SponsorScreen take full screen
-                decorFitsSystemWindows = false,
-                dismissOnClickOutside = false,
-                dismissOnBackPress = true,
-
-            )
-        ) {
-            SponsorScreen(onDismiss = { showSponsorScreen = false })
-        }
-    }
-
+    }    
+    
     // Handle license dialog
     if (showLicensesDialog) {
         Dialog(
